@@ -3,7 +3,6 @@
 namespace CirrusSearch;
 
 use CirrusSearch\BuildDocument\BuildDocument;
-use JobQueueGroup;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
@@ -427,7 +426,7 @@ class Updater extends ElasticsearchIntermediary {
 			}
 		}
 
-		JobQueueGroup::singleton()->push( $jobs );
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
 	}
 
 	private function elasticaWriteClusters(): array {
