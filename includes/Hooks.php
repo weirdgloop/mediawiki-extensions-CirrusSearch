@@ -11,7 +11,6 @@ use CirrusSearch\Search\FancyTitleResultsType;
 use DeferredUpdates;
 use Html;
 use ISearchResultSet;
-use JobQueueGroup;
 use LinksUpdate;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
@@ -311,7 +310,7 @@ class Hooks {
 		if ( $target ) {
 			// DeferredUpdate so we don't end up racing our own page deletion
 			DeferredUpdates::addCallableUpdate( function () use ( $target ) {
-				JobQueueGroup::singleton()->push(
+				MediaWikiServices::getInstance()->getJobQueueGroup()->push(
 					new Job\LinksUpdate( $target, [
 						'addedLinks' => [],
 						'removedLinks' => [],
@@ -331,7 +330,7 @@ class Hooks {
 	public static function onArticleDeleteComplete( $page, $user, $reason, $pageId ) {
 		// Note that we must use the article id provided or it'll be lost in the ether.  The job can't
 		// load it from the title because the page row has already been deleted.
-		JobQueueGroup::singleton()->push(
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push(
 			new Job\DeletePages( $page->getTitle(), [
 				'docId' => self::getConfig()->makeId( $pageId )
 			] )
@@ -347,7 +346,7 @@ class Hooks {
 	 * @param Title $title The page title we've had a revision deleted on
 	 */
 	public static function onRevisionDelete( $title ) {
-		JobQueueGroup::singleton()->push(
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push(
 			new Job\LinksUpdate( $title, [
 				'addedLinks' => [],
 				'removedLinks' => [],
@@ -448,7 +447,7 @@ class Hooks {
 	 */
 	public static function onUploadComplete( \UploadBase $uploadBase ) {
 		if ( $uploadBase->getTitle()->exists() ) {
-			JobQueueGroup::singleton()->push(
+			MediaWikiServices::getInstance()->getJobQueueGroup()->push(
 				new Job\LinksUpdate( $uploadBase->getTitle(), [
 					'addedLinks' => [],
 					'removedLinks' => [],
@@ -598,7 +597,7 @@ class Hooks {
 			] );
 			// Push the job after DB commit but cancel on rollback
 			wfGetDB( DB_MASTER )->onTransactionCommitOrIdle( function () use ( $job ) {
-				JobQueueGroup::singleton()->lazyPush( $job );
+				MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush( $job );
 			}, __METHOD__ );
 		}
 	}
@@ -857,7 +856,7 @@ class Hooks {
 			// Not indexing, thus nothing to remove here.
 			return;
 		}
-		JobQueueGroup::singleton()->push(
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push(
 			new Job\DeleteArchive( $title, [ 'docIds' => $restoredPages ] )
 		);
 	}

@@ -8,7 +8,6 @@ use CirrusSearch\Iterator\CallbackIterator;
 use CirrusSearch\Job;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\Updater;
-use JobQueueGroup;
 use MediaWiki\Logger\LoggerFactory;
 use MWException;
 use MWTimestamp;
@@ -210,6 +209,7 @@ class ForceSearchIndex extends Maintenance {
 		} else {
 			$it = $this->getDeletesIterator();
 		}
+		$jobQueueGroup = MediaWikiServices::getInstance()->getJobQueueGroup();
 
 		foreach ( $it as $batch ) {
 			if ( $this->indexUpdates ) {
@@ -217,7 +217,7 @@ class ForceSearchIndex extends Maintenance {
 				$updates = array_filter( $batch['updates'] );
 				if ( $this->queue ) {
 					$this->waitForQueueToShrink( $wiki );
-					JobQueueGroup::singleton()->push( Job\MassIndex::build(
+					$jobQueueGroup->push( Job\MassIndex::build(
 						$updates, $updateFlags, $this->getOption( 'cluster' )
 					) );
 				} else {
@@ -669,7 +669,7 @@ class ForceSearchIndex extends Maintenance {
 	 * @return int length
 	 */
 	private function getUpdatesInQueue() {
-		return JobQueueGroup::singleton()->get( 'cirrusSearchMassIndex' )->getSize();
+		return MediaWikiServices::getInstance()->getJobQueueGroup()->get( 'cirrusSearchMassIndex' )->getSize();
 	}
 
 	/**
